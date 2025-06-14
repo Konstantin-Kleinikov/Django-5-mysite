@@ -2,6 +2,7 @@ from django.contrib import admin
 
 from blog.models import Post
 
+
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
     list_display = ['title', 'slug', 'author', 'publish', 'status']
@@ -12,6 +13,7 @@ class PostAdmin(admin.ModelAdmin):
     date_hierarchy = 'publish'
     ordering = ['status', '-publish']
     show_facets = admin.ShowFacets.ALWAYS
+    readonly_fields = ['created', 'updated']
     fieldsets = [
         (
             None,
@@ -23,7 +25,7 @@ class PostAdmin(admin.ModelAdmin):
             'Advanced Options',
             {
                 'classes': ['collapse'],
-                'fields': [('publish', 'slug')],
+                'fields': [('publish', 'slug'), ('created', 'updated')],
             },
         ),
     ]
