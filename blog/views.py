@@ -1,16 +1,22 @@
 from django.core.mail import send_mail
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
+from django.db.models import Count
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_POST
 from django.views.generic import ListView
+from taggit.models import Tag
 
 from blog.forms import EmailPostForm, CommentForm
 from blog.models import Post
 
 
 # https://docs.djangoproject.com/en/5.2/topics/http/views/
-def post_list(request):
+def post_list(request, tag_slug=None):
     post_list = Post.published.all()
+    tag = None
+    if tag_slug:
+        tag = get_object_or_404(Tag, slug=tag_slug)
+        post_list = post_list.filter(tags__in=[tag])
     # Page pagination with 3 Posts per page
     # # https://docs.djangoproject.com/en/5.2/ref/paginator
     paginator = Paginator(post_list, 3)
@@ -26,7 +32,7 @@ def post_list(request):
     return render(
         request,
         'blog/post/list.html',
-        {'posts': posts},
+        {'posts': posts, 'tag': tag},
     )
 
 
@@ -43,10 +49,25 @@ def post_detail(request, year, month, day, post):
     comments = post.comments.filter(active=True)
     # Form for comments by users
     form = CommentForm()
+
+    # List of similar posts
+    post_tags_id = post.tags.values_list('id', flat=True)
+    similar_posts = Post.published.filter(
+        tags__in=post_tags_id
+    ).exclude(id=post.id)
+    similar_posts = similar_posts.annotate(
+        same_tags=Count('tags')
+    ).order_by('-same_tags','-publish')[:4]
+
     return render(
         request,
         'blog/post/detail.html',
-        {'post': post, 'comments': comments, 'form': form},
+        {
+            'post': post,
+            'comments': comments,
+            'form': form,
+            'similar_posts': similar_posts,
+        },
     )
 
 
