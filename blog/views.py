@@ -6,7 +6,7 @@ from django.views.decorators.http import require_POST
 from django.views.generic import ListView
 from taggit.models import Tag
 
-from blog.forms import EmailPostForm, CommentForm
+from blog.forms import CommentForm, EmailPostForm
 from blog.models import Post
 
 
@@ -55,6 +55,7 @@ def post_detail(request, year, month, day, post):
     similar_posts = Post.published.filter(
         tags__in=post_tags_id
     ).exclude(id=post.id)
+    # https://docs.djangoproject.com/en/5.2/topics/db/aggregation/
     similar_posts = similar_posts.annotate(
         same_tags=Count('tags')
     ).order_by('-same_tags','-publish')[:4]
